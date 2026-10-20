@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linux Server Security Checklist: SSH, Firewall and Patching</title>
+<meta name="description" content="A practical Linux server hardening checklist: lock down SSH, set a default-deny firewall, block brute-force attempts, patch on a schedule and audit what runs.">
+<link rel="canonical" href="https://server-management-services.pages.dev/">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<meta name="author" content="Bobcares">
+<meta name="theme-color" content="#0F2B3D">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230F2B3D'/%3E%3Cpath d='M3 17h7l3-8 5 15 3-7h8' fill='none' stroke='%235FD3BE' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Bobcares">
+<meta property="og:title" content="Linux Server Security Checklist: SSH, Firewall and Patching">
+<meta property="og:description" content="A practical Linux server hardening checklist: lock down SSH, set a default-deny firewall, block brute-force attempts, patch on a schedule and audit what runs.">
+<meta property="og:url" content="https://server-management-services.pages.dev/">
+<meta property="og:image" content="https://server-management-services.pages.dev/linux-server-security-hardening-checklist-ssh-firewall-fail2ban-and-patching-og.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Linux server security hardening checklist with SSH, firewall and patching shown as completed checks">
+<meta property="article:published_time" content="2026-10-20T00:00:00+00:00">
+<meta property="article:modified_time" content="2026-10-20T00:00:00+00:00">
+<meta property="article:section" content="Server Management">
+<meta property="article:tag" content="Linux security">
+<meta property="article:tag" content="Server hardening">
+<meta property="article:tag" content="SSH">
+<meta property="article:tag" content="Server support">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Linux Server Security Checklist: SSH, Firewall and Patching">
+<meta name="twitter:description" content="A practical Linux server hardening checklist: lock down SSH, set a default-deny firewall, block brute-force attempts, patch on a schedule and audit what runs.">
+<meta name="twitter:image" content="https://server-management-services.pages.dev/linux-server-security-hardening-checklist-ssh-firewall-fail2ban-and-patching-og.png">
+<meta name="twitter:image:alt" content="Linux server security hardening checklist with SSH, firewall and patching shown as completed checks">
+
+<style>
+  :root{
+    --paper:#F4F7F9;
+    --surface:#FFFFFF;
+    --ink:#13232E;
+    --muted:#51636F;
+    --rule:#D5DEE4;
+    --rack:#0F2B3D;
+    --rack-deep:#0B2231;
+    --link:#0A6A94;
+    --warn:#E39A0B;
+    --sans:"Avenir Next","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+    --serif:Charter,"Bitstream Charter","Sitka Text",Cambria,"Iowan Old Style",Georgia,serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:1.5rem}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--serif);font-size:1.125rem;line-height:1.75;text-rendering:optimizeLegibility}
+  a{color:var(--link);text-underline-offset:.18em;text-decoration-thickness:1px}
+  a:hover{text-decoration-thickness:2px}
+  a:focus-visible,.scroll:focus-visible,pre:focus-visible{outline:3px solid var(--warn);outline-offset:3px;border-radius:2px}
+  .skip{position:absolute;left:-999px;top:0;z-index:10;background:var(--surface);color:var(--ink);padding:.6rem 1rem;font-family:var(--sans)}
+  .skip:focus{left:1rem;top:1rem}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+  .hero{background:var(--rack);color:#EAF3F7;padding:clamp(2.4rem,6vw,4.2rem) 1.25rem clamp(2rem,5vw,3rem);border-bottom:4px solid var(--warn)}
+  .inner{max-width:64rem;margin:0 auto}
+  h1{font-family:var(--sans);font-weight:800;font-size:clamp(2rem,4.8vw,3.1rem);line-height:1.08;letter-spacing:-.022em;margin:0 0 1.1rem;max-width:21em;text-wrap:balance}
+  .standfirst{font-size:1.2rem;line-height:1.65;margin:0 0 .9rem;color:#D6E6EE}
+  .byline{font-family:var(--sans);font-size:.9rem;color:#9DB6C4;margin:0}
+
+  .layout{max-width:64rem;margin:0 auto;padding:2.8rem 1.25rem 0;display:grid;grid-template-columns:13.5rem minmax(0,1fr);gap:3rem;align-items:start}
+  .toc{position:sticky;top:1.5rem;font-family:var(--sans);font-size:.92rem;line-height:1.4}
+  .toc-title{margin:0 0 .7rem;font-weight:700;color:var(--muted)}
+  .toc ol{list-style:none;margin:0;padding:0;border-left:2px solid var(--rule)}
+  .toc a{display:block;margin-left:-2px;padding:.4rem 0 .4rem .9rem;border-left:2px solid transparent;color:var(--ink);text-decoration:none}
+  .toc a:hover{border-left-color:var(--link);color:var(--link)}
+
+  .prose{padding-bottom:1rem;min-width:0}
+  .prose section{margin-top:3.2rem}
+  .prose h2{font-family:var(--sans);font-size:clamp(1.45rem,3vw,1.85rem);line-height:1.2;letter-spacing:-.012em;font-weight:780;margin:0 0 .9rem;max-width:40rem}
+  .prose h3{font-family:var(--sans);font-size:1.15rem;line-height:1.3;font-weight:700;margin:0 0 .35rem}
+  .prose p{margin:0 0 1.1rem;max-width:40rem}
+  code{font-family:var(--mono)}
+  p code,li code,td code,dd code{background:#E4ECF1;padding:.08em .35em;border-radius:3px;font-size:.86em}
+
+  .qa{padding:1.2rem 0 .2rem;border-top:1px solid var(--rule);max-width:40rem}
+  .qa:first-of-type{border-top:2px solid var(--ink)}
+
+  .foot{background:var(--rack-deep);color:#B3C8D4;margin-top:3rem;padding:2.6rem 1.25rem 2.4rem;font-family:var(--sans);font-size:.93rem;line-height:1.6}
+  .foot .inner{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:2rem 3.5rem}
+  .foot-h{margin:0 0 .6rem;font-size:1.05rem;font-weight:700;color:#fff}
+  .foot p{margin:0 0 .7rem;max-width:34rem}
+  .foot dl{margin:0}
+  .foot dl div{padding:.55rem 0;border-top:1px solid rgba(255,255,255,.14)}
+  .foot dl div:first-child{border-top:0;padding-top:0}
+  .foot dt{font-size:.8rem;color:#8AA6B5;margin:0 0 .1rem}
+  .foot dd{margin:0;color:#E4EEF3}
+  .foot a{color:#CFE8F2}
+  .foot .version{grid-column:1 / -1;margin:.6rem 0 0;padding-top:1rem;border-top:1px solid rgba(255,255,255,.14);font-size:.8rem;color:#7F9AA9;max-width:none}
+
+  @media (max-width:900px){
+    .layout{grid-template-columns:minmax(0,1fr);gap:1.6rem}
+    .foot .inner{grid-template-columns:minmax(0,1fr)}
+    .toc{position:static;background:var(--surface);border:1px solid var(--rule);border-radius:6px;padding:1rem 1.1rem}
+  }
+  @media (max-width:700px){body{font-size:1.0625rem}}
+
+  pre{background:var(--rack-deep);color:#E4EEF3;padding:1rem 1.15rem;border-radius:6px;overflow-x:auto;font-size:.88rem;line-height:1.65;max-width:40rem;margin:1.2rem 0}
+  pre code{background:none;padding:0;font-size:inherit;color:inherit}
+
+  .jobs{list-style:none;margin:1.4rem 0;padding:0;max-width:40rem;border-top:2px solid var(--ink)}
+  .jobs li{padding:.85rem 0;border-bottom:1px solid var(--rule)}
+  .jobs strong{font-family:var(--sans);display:block;font-size:1rem;margin-bottom:.1rem}
+
+  .checklist{list-style:none;margin:1.4rem 0;padding:0;max-width:40rem;border-top:2px solid var(--ink)}
+  .checklist li{position:relative;padding:.75rem 0 .75rem 2.3rem;border-bottom:1px solid var(--rule);font-family:var(--sans);font-size:1rem;line-height:1.45}
+  .checklist li::before{content:"";position:absolute;left:.1rem;top:.95rem;width:1.15rem;height:1.15rem;border:2px solid var(--link);border-radius:3px;background:var(--surface)}
+</style>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://bobcares.com/#organization",
+      "name": "Bobcares",
+      "url": "https://bobcares.com/",
+      "slogan": "Your End-to-End IT Partner. 24/7/365.",
+      "description": "Bobcares provides product engineering, AI, DevOps, cloud optimization, cybersecurity and managed IT support services, including server management and monitoring.",
+      "telephone": "+1-800-383-5193",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+1-800-383-5193",
+        "contactType": "customer service"
+      },
+      "location": [
+        {
+          "@type": "Place",
+          "name": "Poornam Inc.",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Phoenix",
+            "addressRegion": "AZ",
+            "addressCountry": "US"
+          }
+        },
+        {
+          "@type": "Place",
+          "name": "Poornam Info Vision Pvt Ltd",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Kochi",
+            "addressRegion": "Kerala",
+            "addressCountry": "IN"
+          }
+        }
+      ],
+      "sameAs": [
+        "https://www.linkedin.com/company/bobcares/",
+        "https://www.youtube.com/@BobcaresOfficial/",
+        "https://www.facebook.com/Bobcares/",
+        "https://www.instagram.com/bobcares.official/"
+      ]
+    },
+    {
+      "@type": "Service",
+      "@id": "https://bobcares.com/services/managed-it-services/server-management/#service",
+      "name": "Server Management Services",
+      "serviceType": "Server management and monitoring",
+      "description": "24/7 server administration, monitoring, patching, security hardening, backup management and support for Linux, Windows, cloud, virtual and hybrid environments.",
+      "url": "https://bobcares.com/services/managed-it-services/server-management/",
+      "provider": {
+        "@id": "https://bobcares.com/#organization"
+      },
+      "areaServed": "Worldwide"
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://server-management-services.pages.dev/#webpage",
+      "url": "https://server-management-services.pages.dev/",
+      "name": "Linux Server Security Checklist: SSH, Firewall and Patching",
+      "description": "A practical Linux server hardening checklist: lock down SSH, set a default-deny firewall, block brute-force attempts, patch on a schedule and audit what runs.",
+      "inLanguage": "en",
+      "publisher": {
+        "@id": "https://bobcares.com/#organization"
+      },
+      "breadcrumb": {
+        "@id": "https://server-management-services.pages.dev/#breadcrumb"
+      },
+      "primaryImageOfPage": {
+        "@type": "ImageObject",
+        "url": "https://server-management-services.pages.dev/linux-server-security-hardening-checklist-ssh-firewall-fail2ban-and-patching-og.png",
+        "width": 1200,
+        "height": 630
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://server-management-services.pages.dev/#breadcrumb",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Bobcares",
+          "item": "https://bobcares.com/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Server Management Services",
+          "item": "https://bobcares.com/services/managed-it-services/server-management/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Linux Server Security Hardening Checklist"
+        }
+      ]
+    },
+    {
+      "@type": "Article",
+      "@id": "https://server-management-services.pages.dev/#article",
+      "headline": "Linux Server Security Hardening Checklist: SSH, Firewall, Fail2Ban and Patching",
+      "description": "A practical Linux server hardening checklist: lock down SSH, set a default-deny firewall, block brute-force attempts, patch on a schedule and audit what runs.",
+      "image": "https://server-management-services.pages.dev/linux-server-security-hardening-checklist-ssh-firewall-fail2ban-and-patching-og.png",
+      "datePublished": "2026-10-20",
+      "dateModified": "2026-10-20",
+      "inLanguage": "en",
+      "isAccessibleForFree": true,
+      "articleSection": "Server Management",
+      "timeRequired": "PT5M",
+      "keywords": "linux server security, server hardening checklist, ssh hardening, fail2ban, server support services",
+      "about": [
+        {
+          "@type": "Thing",
+          "name": "Linux server security"
+        },
+        {
+          "@type": "Thing",
+          "name": "Server hardening"
+        }
+      ],
+      "mentions": {
+        "@id": "https://bobcares.com/services/managed-it-services/server-management/#service"
+      },
+      "mainEntityOfPage": {
+        "@id": "https://server-management-services.pages.dev/#webpage"
+      },
+      "author": {
+        "@id": "https://bobcares.com/#organization"
+      },
+      "publisher": {
+        "@id": "https://bobcares.com/#organization"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://server-management-services.pages.dev/#faq",
+      "isPartOf": {
+        "@id": "https://server-management-services.pages.dev/#webpage"
+      },
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Should I change the default SSH port?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It reduces noise from automated scans, but it does not stop a targeted attacker. Key-only logins, a firewall and prompt patching do the real work."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is Fail2Ban still needed if password login is disabled?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "It is not strictly required for SSH, but it still helps. It bans abusive addresses, reduces log noise and load, and can protect other services such as mail and web logins."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How often should Linux servers be patched?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Apply security updates as soon as practical, often automatically within days. Schedule kernel updates and reboots in a maintenance window, and act faster on critical vulnerabilities."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Do I need a host firewall if my cloud provider has one?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, use both. The provider firewall filters traffic before it reaches the server, and a host firewall protects you from misconfiguration and from traffic inside the network."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#article">Skip to the article</a>
+
+<header class="hero">
+  <div class="inner">
+    <h1>Linux Server Security Hardening Checklist: SSH, Firewall, Fail2Ban and Patching</h1>
+    <p class="standfirst">Weak SSH settings, open ports nobody needs and delayed patches are among the most common ways Linux servers get into trouble. This checklist covers the controls that close those gaps first, in the order that usually pays off fastest.</p>
+    <p class="byline">Published October 20, 2026. About a 5-minute read.</p>
+  </div>
+</header>
+
+<main>
+<article id="article">
+  <div class="layout">
+    <nav class="toc" aria-label="In this guide">
+      <p class="toc-title">In this guide</p>
+      <ol>
+        <li><a href="#glance">The Checklist at a Glance</a></li>
+        <li><a href="#inventory">Start With an Inventory</a></li>
+        <li><a href="#ssh">Lock Down SSH</a></li>
+        <li><a href="#firewall">Set a Default-Deny Firewall</a></li>
+        <li><a href="#bruteforce">Block Repeated Failed Logins</a></li>
+        <li><a href="#patching">Patch on a Schedule</a></li>
+        <li><a href="#privileges">Limit Privileges and Keep Watch</a></li>
+        <li><a href="#maintain">Keep It Hardened Over Time</a></li>
+        <li><a href="#conclusion">Conclusion</a></li>
+        <li><a href="#faq">Frequently Asked Questions</a></li>
+      </ol>
+    </nav>
+
+    <div class="prose">
+      <p>Hardening means reducing what an attacker can reach and limiting what they can do if they get in. It is not one setting but a handful of habits applied in a sensible order. Work through this checklist on a new server, then repeat it as a review on servers that have been running for years.</p>
+      <p>Teams without a dedicated security engineer can also use <a href="https://bobcares.com/services/managed-it-services/server-management/">server support services</a> to apply and maintain these controls. The checklist is the same either way.</p>
+
+      <section id="glance" aria-labelledby="glance-h">
+        <h2 id="glance-h">The Checklist at a Glance</h2>
+        <p>Ten controls, each explained below. Tick them off per server and keep the list with your documentation.</p>
+        <ul class="checklist">
+          <li>Inventory listening ports, accounts and enabled services</li>
+          <li>Disable root login and password login over SSH</li>
+          <li>Restrict SSH to named users and trusted addresses</li>
+          <li>Set a default-deny firewall that exposes only what is needed</li>
+          <li>Ban repeated failed logins automatically</li>
+          <li>Apply security updates on a schedule</li>
+          <li>Remove unused packages and services</li>
+          <li>Give users and services the least privilege they need</li>
+          <li>Send logs to a central place and watch for changes</li>
+          <li>Review everything on a regular cycle</li>
+        </ul>
+      </section>
+
+      <section id="inventory" aria-labelledby="inventory-h">
+        <h2 id="inventory-h">Start With an Inventory</h2>
+        <p>You cannot protect what you have not listed. Before changing anything, record what is listening, who can log in and what starts at boot.</p>
+        <pre tabindex="0"><code>ss -tulpn                                   # listening ports and the process behind each
+getent passwd                               # every account on the system
+systemctl list-unit-files --state=enabled   # services that start at boot</code></pre>
+        <p>Anything you cannot justify should be stopped, disabled or removed. A service that is not running cannot be attacked, and it needs no patching.</p>
+      </section>
+
+      <section id="ssh" aria-labelledby="ssh-h">
+        <h2 id="ssh-h">Lock Down SSH</h2>
+        <p>SSH is the front door of most Linux servers, so it gets the most attention. Confirm that your own key-based login works, then set the following in <code>/etc/ssh/sshd_config</code>.</p>
+        <pre tabindex="0"><code>PermitRootLogin no
+PasswordAuthentication no
+PubkeyAuthentication yes
+MaxAuthTries 3
+AllowUsers deploy admin</code></pre>
+        <ul class="jobs">
+          <li><strong>PermitRootLogin no</strong>Attackers have to guess a username as well as a credential, and sudo leaves a record of who did what.</li>
+          <li><strong>PasswordAuthentication no</strong>Only keys are accepted, which removes password guessing as an attack.</li>
+          <li><strong>MaxAuthTries 3</strong>Limits the number of attempts per connection.</li>
+          <li><strong>AllowUsers</strong>Only the listed accounts can log in over SSH. Replace the example names with your own.</li>
+        </ul>
+        <div class="note"><p>Check the file with <code>sshd -t</code>, reload the service, then open a second session to confirm you can still log in before closing the first. Most lockouts happen at this step.</p></div>
+        <p>Moving SSH to a different port reduces log noise from automated scans, but it is not a security control on its own.</p>
+      </section>
+
+      <section id="firewall" aria-labelledby="firewall-h">
+        <h2 id="firewall-h">Set a Default-Deny Firewall</h2>
+        <p>A firewall should drop everything that is not explicitly allowed. Use ufw on Debian and Ubuntu, firewalld on Red Hat family systems, or nftables directly. Hosting servers often also have a firewall built into the control panel.</p>
+        <p>Open only the ports the server must expose, usually 80 and 443 for a web server. Restrict administration ports such as SSH and database ports to known IP addresses or a VPN. A database port open to the whole internet is a frequent finding in security reviews.</p>
+        <p>If your cloud provider offers a network firewall such as security groups, use it as well. The provider firewall filters traffic before it reaches the server, and the host firewall protects you if that outer layer is misconfigured.</p>
+      </section>
+
+      <section id="bruteforce" aria-labelledby="bruteforce-h">
+        <h2 id="bruteforce-h">Block Repeated Failed Logins</h2>
+        <p>Fail2Ban reads service logs and temporarily bans addresses that fail authentication repeatedly. With key-only SSH those guesses cannot succeed, but banning them still cuts log noise and wasted load. Fail2Ban can also protect other services, such as mail and web logins, once the matching log filters are enabled.</p>
+        <p>Start with the SSH defaults, add your own addresses to the <code>ignoreip</code> setting so you cannot ban yourself, and test that a ban actually triggers.</p>
+      </section>
+
+      <section id="patching" aria-labelledby="patching-h">
+        <h2 id="patching-h">Patch on a Schedule</h2>
+        <p>Unpatched software is a standing invitation. Enable automatic security updates where you can: <code>unattended-upgrades</code> on Debian and Ubuntu, <code>dnf-automatic</code> on Red Hat family systems.</p>
+        <p>Kernel updates need a reboot, so agree a maintenance window, or use live kernel patching where your distribution supports it. Track end-of-life dates as well, because a distribution that no longer receives security fixes cannot be hardened. Production systems with strict change control can stage updates on a test server first, but the delay should be days, not months.</p>
+      </section>
+
+      <section id="privileges" aria-labelledby="privileges-h">
+        <h2 id="privileges-h">Limit Privileges and Keep Watch</h2>
+        <p>Give each person their own account, use sudo with specific rules instead of shared root access, and run services under dedicated low-privilege users. Turn on <code>auditd</code> where you need a record of sensitive actions, and send logs to a central place so an attacker who reaches one server cannot erase the evidence there.</p>
+        <p>Lynis is a free auditing tool that checks a server against common hardening practices, and the CIS Benchmarks publish detailed configuration guidance for each major distribution. Both are useful for checking your own work.</p>
+      </section>
+
+      <section id="maintain" aria-labelledby="maintain-h">
+        <h2 id="maintain-h">Keep It Hardened Over Time</h2>
+        <p>Hardening decays. New packages open new ports, staff leave and configurations drift. Review the checklist every quarter, remove accounts when people change roles, and run a vulnerability scanner such as Nessus or Qualys against the server on a schedule.</p>
+        <p>Security controls use resources too. If a hardened server starts to feel slow, this guide to <a href="https://server-management-services.onrender.com/">finding CPU, memory and disk bottlenecks</a> shows how to trace the cause.</p>
+        <p>The <a href="https://bobcares.com/">Bobcares engineering team</a> includes security hardening and regular patching in its server management work, for teams that would rather not carry it alone.</p>
+      </section>
+
+      <section id="conclusion" aria-labelledby="conclusion-h">
+        <h2 id="conclusion-h">Conclusion</h2>
+        <p>A hardened Linux server is the result of a few dull habits: knowing what runs, locking down SSH, filtering traffic by default, patching on time and watching the logs. None of them is difficult, and together they close most of the doors that automated attacks rely on.</p>
+        <p>If keeping up with them is a struggle, server management services can take on the routine, and server monitoring services can alert you when something changes.</p>
+      </section>
+
+      <section id="faq" aria-labelledby="faq-h">
+        <h2 id="faq-h">Frequently Asked Questions</h2>
+        <div class="qa">
+          <h3>Should I change the default SSH port?</h3>
+          <p>It reduces noise from automated scans, but it does not stop a targeted attacker. Key-only logins, a firewall and prompt patching do the real work.</p>
+        </div>
+        <div class="qa">
+          <h3>Is Fail2Ban still needed if password login is disabled?</h3>
+          <p>It is not strictly required for SSH, but it still helps. It bans abusive addresses, reduces log noise and load, and can protect other services such as mail and web logins.</p>
+        </div>
+        <div class="qa">
+          <h3>How often should Linux servers be patched?</h3>
+          <p>Apply security updates as soon as practical, often automatically within days. Schedule kernel updates and reboots in a maintenance window, and act faster on critical vulnerabilities.</p>
+        </div>
+        <div class="qa">
+          <h3>Do I need a host firewall if my cloud provider has one?</h3>
+          <p>Yes, use both. The provider firewall filters traffic before it reaches the server, and a host firewall protects you from misconfiguration and from traffic inside the network.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</article>
+</main>
+
+<footer class="foot">
+  <div class="inner">
+    <div>
+      <p class="foot-h">About the publisher</p>
+      <p>Bobcares is an end-to-end IT partner covering product engineering, AI, DevOps, cloud optimization, cybersecurity and support, with in-house technical experts on call 24/7/365 and more than 25 years of IT experience.</p>
+    </div>
+    <dl>
+      <div><dt>Offices</dt><dd>Phoenix, Arizona, United States<br>Kochi, Kerala, India</dd></div>
+      <div><dt>Phone</dt><dd><a href="tel:+18003835193">+1 800 383 5193</a></dd></div>
+      <div><dt>Certifications</dt><dd>ISO 9001:2015 and ISO 27001:2022</dd></div>
+      <div><dt>Services</dt><dd>Server management, outsourced support, white-label support, infrastructure optimization, DevOps and automation</dd></div>
+    </dl>
+    <p class="version">Version 1.0, published October 2026.</p>
+  </div>
+</footer>
+</body>
+</html>
