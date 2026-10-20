@@ -1,0 +1,15 @@
+paths:
+  static: ''
+  uploads: uploads
+timezone: Asia/Karachi
+markdown:
+  engine: commonmark
+  options: {}
+source: /
+collections_config:
+  pages:
+    path: ''
+    icon: wysiwyg
+  cloudcannon:
+    path: cloudcannon
+    icon: cloud_alert
